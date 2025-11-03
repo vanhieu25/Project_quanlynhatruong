@@ -431,20 +431,140 @@ namespace New_project
 
         private void DeleteTeacher(string magv)
         {
-            DialogResult result = MessageBox.Show(
-    $"Bạn có chắc chắn muốn xóa giảng viên mã {magv}?\n\nLưu ý: Dữ liệu sẽ bị xóa vĩnh viễn và không thể khôi phục!",
-     "Xác nhận xóa", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-
-            if (result == DialogResult.Yes)
+            try
             {
-                string query = $"DELETE FROM giangvien WHERE magv = '{magv}'";
-                if (ExecuteNonQuery(query))
+                // Check if this teacher is referenced by any students
+                string checkStudentsQuery = "SELECT COUNT(*) as count FROM sinhvien WHERE magvhd = @magv";
+                DataTable dtStudents = new DataTable();
+    
+                using (SqlConnection connection = new SqlConnection(connectionString))
                 {
-                    MessageBox.Show("Xóa giảng viên thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    LoadTeacherData();
+                    using (SqlCommand command = new SqlCommand(checkStudentsQuery, connection))
+                    {
+                        command.Parameters.AddWithValue("@magv", magv);
+                        connection.Open();
+                        using (SqlDataAdapter adapter = new SqlDataAdapter(command))
+                        {
+                            adapter.Fill(dtStudents);
+                        }
+                    }
+                }
+              
+                int studentCount = dtStudents.Rows.Count > 0 ? Convert.ToInt32(dtStudents.Rows[0]["count"]) : 0;
+                
+                // Check if this teacher is teaching any classes
+                string checkClassesQuery = "SELECT COUNT(*) as count FROM lophocphan WHERE magv = @magv";
+                DataTable dtClasses = new DataTable();
+    
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    using (SqlCommand command = new SqlCommand(checkClassesQuery, connection))
+                    {
+                        command.Parameters.AddWithValue("@magv", magv);
+                        connection.Open();
+                        using (SqlDataAdapter adapter = new SqlDataAdapter(command))
+                        {
+                            adapter.Fill(dtClasses);
+                        }
+                    }
+                }
+                
+                int classCount = dtClasses.Rows.Count > 0 ? Convert.ToInt32(dtClasses.Rows[0]["count"]) : 0;
+                
+                // Build warning message
+                string warningMessage = $"Giảng viên mã {magv}";
+                bool hasConstraints = false;
+   
+                if (studentCount > 0 || classCount > 0)
+                {
+                    warningMessage += " có các ràng buộc sau:\n\n";
+                            
+                    if (studentCount > 0)
+                    {
+                        warningMessage += $"- Đang hướng dẫn {studentCount} sinh viên\n";
+                        hasConstraints = true;
+                    }
+                            
+                    if (classCount > 0)
+                    {
+                        warningMessage += $"- Đang giảng dạy {classCount} lớp học phần\n";
+                        hasConstraints = true;
+                    }
+
+                    warningMessage += "\nBạn có muốn:\n" +
+       "- Nhấn YES: Xóa giảng viên và gỡ bỏ tất cả liên kết\n" +
+                    "- Nhấn NO: Hủy thao tác xóa";
+                  
+                    DialogResult result = MessageBox.Show(
+                 warningMessage,
+                  "Cảnh báo ràng buộc dữ liệu",
+              MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+                
+                  if (result == DialogResult.No)
+                    {
+                        return;
+                   }
+                            
+                  // Update students to remove the advisor reference
+                  if (studentCount > 0)
+                    {
+                    string updateStudentsQuery = "UPDATE sinhvien SET magvhd = NULL WHERE magvhd = @magv";
+                            SqlParameter[] updateStudentParams = { new SqlParameter("@magv", magv) };
+                            
+                         if (!ExecuteNonQuery(updateStudentsQuery, updateStudentParams))
+                   {
+     MessageBox.Show("Không thể cập nhật thông tin sinh viên. Vui lòng thử lại!", 
+                  "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                   return;
+                 }
+                  }
+            
+                // Update classes to remove the teacher reference
+                 if (classCount > 0)
+                 {
+                     string updateClassesQuery = "UPDATE lophocphan SET magv = NULL WHERE magv = @magv";
+                    SqlParameter[] updateClassParams = { new SqlParameter("@magv", magv) };
+        
+        if (!ExecuteNonQuery(updateClassesQuery, updateClassParams))
+         {
+         MessageBox.Show("Không thể cập nhật thông tin lớp học phần. Vui lòng thử lại!", 
+           "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        return;
+                }
                 }
             }
+            else
+            {
+                DialogResult result = MessageBox.Show(
+                    $"Bạn có chắc chắn muốn xóa giảng viên mã {magv}?\n\nLưu ý: Dữ liệu sẽ bị xóa vĩnh viễn và không thể khôi phục!",
+         "Xác nhận xóa",
+            MessageBoxButtons.YesNo,
+              MessageBoxIcon.Warning);
+            
+       if (result == DialogResult.No)
+              {
+                     return;
+               }
+            }
+            
+            // Now delete the teacher
+            string deleteQuery = "DELETE FROM giangvien WHERE magv = @magv";
+            SqlParameter[] deleteParams = { new SqlParameter("@magv", magv) };
+            
+            if (ExecuteNonQuery(deleteQuery, deleteParams))
+            {
+         MessageBox.Show("Xóa giảng viên thành công!", "Thành công", 
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+       LoadTeacherData();
         }
+    }
+    catch (Exception ex)
+    {
+        MessageBox.Show($"Lỗi khi xóa giảng viên: {ex.Message}", "Lỗi", 
+       MessageBoxButtons.OK, MessageBoxIcon.Error);
+    }
+}
 
         private void BtnAddTeacher_Click(object sender, EventArgs e)
         {
