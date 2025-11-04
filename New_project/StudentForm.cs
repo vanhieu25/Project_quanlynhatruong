@@ -204,36 +204,50 @@ txtLophoc = CreateTextBox(mainPanel, "Lớp học:", 270, existingData?["lophoc"
 
             CreateButtons(mainPanel, 515, isNew ? "💾 Thêm mới" : "💾 Lưu thay đổi", () =>
             {
-       if (string.IsNullOrWhiteSpace(controls.txtMasv.Text) || string.IsNullOrWhiteSpace(controls.txtHoten.Text))
+     if (string.IsNullOrWhiteSpace(controls.txtMasv.Text) || string.IsNullOrWhiteSpace(controls.txtHoten.Text))
     {
-          MessageBox.Show(isNew ? "Vui lòng nhập đầy đủ Mã SV và Họ tên!" : "Vui lòng nhập họ tên!", 
+    MessageBox.Show(isNew ? "Vui lòng nhập đầy đủ Mã SV và Họ tên!" : "Vui lòng nhập họ tên!", 
    "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
       return;
     }
+
+  // Check for duplicate student ID when adding new student
+           if (isNew)
+    {
+     SqlParameter[] checkParams = { new SqlParameter("@masv", controls.txtMasv.Text.Trim()) };
+ DataTable dtCheck = dbHelper.ExecuteStoredProcedure("sp_GetStudentById", checkParams);
+               if (dtCheck.Rows.Count > 0)
+             {
+   MessageBox.Show($"Mã sinh viên '{controls.txtMasv.Text.Trim()}' đã tồn tại trong hệ thống!\n\nVui lòng sử dụng mã sinh viên khác.", 
+      "Mã sinh viên trùng lặp", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            controls.txtMasv.Focus();
+                return;
+  }
+            }
 
          string magvhd = controls.cboGVHD.SelectedItem?.ToString().Split('-')[0].Trim();
        SqlParameter[] parameters = {
   new SqlParameter("@masv", controls.txtMasv.Text.Trim()),
       new SqlParameter("@hoten", controls.txtHoten.Text.Trim()),
-         new SqlParameter("@ngaysinh", controls.dtpNgaysinh.Value),
+  new SqlParameter("@ngaysinh", controls.dtpNgaysinh.Value),
              new SqlParameter("@gioitinh", controls.cboGioitinh.SelectedItem?.ToString() ?? "Nam"),
      new SqlParameter("@dienthoai", controls.txtDienthoai.Text.Trim()),
        new SqlParameter("@email", controls.txtEmail.Text.Trim()),
-             new SqlParameter("@lophoc", controls.txtLophoc.Text.Trim()),
-     new SqlParameter("@chuyennganh", controls.txtChuyennganh.Text.Trim()),
+  new SqlParameter("@lophoc", controls.txtLophoc.Text.Trim()),
+new SqlParameter("@chuyennganh", controls.txtChuyennganh.Text.Trim()),
          new SqlParameter("@bacdaotao", controls.txtBacdaotao.Text.Trim()),
-          new SqlParameter("@diemtb", string.IsNullOrWhiteSpace(controls.txtDiemtb.Text) ? (object)DBNull.Value : Convert.ToDouble(controls.txtDiemtb.Text)),
+     new SqlParameter("@diemtb", string.IsNullOrWhiteSpace(controls.txtDiemtb.Text) ? (object)DBNull.Value : Convert.ToDouble(controls.txtDiemtb.Text)),
   new SqlParameter("@magvhd", magvhd ?? (object)DBNull.Value)
           };
 
-              string procedure = isNew ? "sp_InsertStudent" : "sp_UpdateStudent";
-            if (dbHelper.ExecuteNonQuery(procedure, parameters))
+      string procedure = isNew ? "sp_InsertStudent" : "sp_UpdateStudent";
+       if (dbHelper.ExecuteNonQuery(procedure, parameters))
           {
      MessageBox.Show(isNew ? "Thêm sinh viên mới thành công!" : "Cập nhật thông tin sinh viên thành công!", 
    "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
   form.Close();
     LoadStudentData();
-            panelChartArea.Invalidate();
+    panelChartArea.Invalidate();
          }
   }, form);
 

@@ -229,32 +229,46 @@ form.Controls.Add(mainPanel);
      CreateButtons(mainPanel, 380, isNew ? "💾 Thêm mới" : "💾 Lưu thay đổi", () =>
    {
        if (string.IsNullOrWhiteSpace(controls.txtMagv.Text) || string.IsNullOrWhiteSpace(controls.txtHoten.Text))
-          {
+   {
   MessageBox.Show(isNew ? "Vui lòng nhập đầy đủ Mã GV và Họ tên!" : "Vui lòng nhập họ tên!", 
    "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
       return;
         }
 
+            // Check for duplicate teacher ID when adding new teacher
+  if (isNew)
+   {
+   SqlParameter[] checkParams = { new SqlParameter("@magv", controls.txtMagv.Text.Trim()) };
+     DataTable dtCheck = dbHelper.ExecuteStoredProcedure("sp_GetTeacherById", checkParams);
+    if (dtCheck.Rows.Count > 0)
+ {
+ MessageBox.Show($"Mã giảng viên '{controls.txtMagv.Text.Trim()}' đã tồn tại trong hệ thống!\n\nVui lòng sử dụng mã giảng viên khác.", 
+        "Mã giảng viên trùng lặp", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+    controls.txtMagv.Focus();
+  return;
+    }
+ }
+
     SqlParameter[] parameters = {
-           new SqlParameter("@magv", controls.txtMagv.Text.Trim()),
+   new SqlParameter("@magv", controls.txtMagv.Text.Trim()),
        new SqlParameter("@hotengv", controls.txtHoten.Text.Trim()),
-           new SqlParameter("@ngaysinh", controls.dtpNgaysinh.Value),
-          new SqlParameter("@sdt", controls.txtSdt.Text.Trim()),
-            new SqlParameter("@email", controls.txtEmail.Text.Trim()),
+    new SqlParameter("@ngaysinh", controls.dtpNgaysinh.Value),
+    new SqlParameter("@sdt", controls.txtSdt.Text.Trim()),
+      new SqlParameter("@email", controls.txtEmail.Text.Trim()),
         new SqlParameter("@gioitinh", controls.cboGioitinh.SelectedItem?.ToString() ?? "Nam"),
-            new SqlParameter("@lophuongdan", controls.txtLophd.Text.Trim()),
-                 new SqlParameter("@bomon", controls.txtBomon.Text.Trim())
+      new SqlParameter("@lophuongdan", controls.txtLophd.Text.Trim()),
+   new SqlParameter("@bomon", controls.txtBomon.Text.Trim())
        };
 
  string procedure = isNew ? "sp_InsertTeacher" : "sp_UpdateTeacher";
-            if (dbHelper.ExecuteNonQuery(procedure, parameters))
-                {
-                 MessageBox.Show(isNew ? "Thêm giảng viên mới thành công!" : "Cập nhật thông tin giảng viên thành công!", 
+      if (dbHelper.ExecuteNonQuery(procedure, parameters))
+    {
+    MessageBox.Show(isNew ? "Thêm giảng viên mới thành công!" : "Cập nhật thông tin giảng viên thành công!", 
           "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
      form.Close();
        LoadTeacherData();
       }
-            }, form);
+  }, form);
 
    form.ShowDialog();
         }
