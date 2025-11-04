@@ -11,7 +11,6 @@ namespace New_project
     public partial class StudentForm : Form
     {
         private readonly DatabaseHelper dbHelper = new DatabaseHelper();
-        private ContextMenuStrip contextMenu;
 
         public StudentForm()
         {
@@ -263,31 +262,31 @@ txtLophoc = CreateTextBox(mainPanel, "Lớp học:", 270, existingData?["lophoc"
    return panel;
 }
 
-        private TextBox CreateTextBox(Panel parent, string label, int yPos, string value = "", bool readOnly = false)
-        {
+ private TextBox CreateTextBox(Panel parent, string label, int yPos, string value = "", bool readOnly = false)
+      {
         parent.Controls.Add(new Label
   {
-         Text = label,
+    Text = label,
     Left = 0,
-          Top = yPos,
+      Top = yPos,
           Width = 130,
        Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(55, 65, 81)
-            });
+           ForeColor = Color.FromArgb(55, 65, 81)
+     });
 
  var txt = new TextBox
       {
       Left = 140,
     Top = yPos,
        Width = 320,
-                Font = new Font("Segoe UI", 10F),
+         Font = new Font("Segoe UI", 10F),
     Text = value ?? "",
             ReadOnly = readOnly,
-                BackColor = readOnly ? Color.FromArgb(243, 244, 246) : Color.White
+ BackColor = readOnly ? Color.FromArgb(243, 244, 246) : Color.White
     };
-            parent.Controls.Add(txt);
-            return txt;
-        }
+  parent.Controls.Add(txt);
+    return txt;
+    }
 
         private DateTimePicker CreateDatePicker(Panel parent, string label, int yPos, DateTime value)
         {

@@ -313,5 +313,6 @@
         private Panel panelChartArea;
         private Label lblChartTitle;
         private PictureBox pictureBox1;
+        private ContextMenuStrip contextMenu;
     }
 }
